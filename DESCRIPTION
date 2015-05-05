@@ -1,7 +1,7 @@
 Package: WaterML
 Title: Fetch and Analyze Data from WaterML or CUAHSI WaterOneFlow Web
         Service
-Version: 0.9.6
+Version: 1.0.0
 Authors@R: person("Jiri","Kadlec", email="jirikadlec2@gmail.com", role=c("aut", "cre"))
 Description: Lets you connect to any CUAHSI WaterOneFlow web service from any hydroserver.
     To see list of available hydroservers, see http://hiscentral.cuahsi.org.
@@ -22,8 +22,8 @@ Imports: XML, RJSONIO, httr
 License: MIT + file LICENSE
 LazyData: true
 NeedsCompilation: no
-Packaged: 2015-05-01 19:39:47 UTC; Jiri
+Packaged: 2015-05-05 10:59:59 UTC; Jiri
 Author: Jiri Kadlec [aut, cre]
 Maintainer: Jiri Kadlec <jirikadlec2@gmail.com>
 Repository: CRAN
-Date/Publication: 2015-05-01 23:35:20
+Date/Publication: 2015-05-05 16:14:40
