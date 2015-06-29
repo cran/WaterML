@@ -7,17 +7,124 @@
 #'  for example: http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL
 #' @param siteCode The full site code, for example: default:Ru5BMMA. To get a list of
 #' available site codes, see GetSites() function and use the FullSiteCode field.
+#' @return a data.frame of data values with the following columns:
+#' \tabular{lll}{
+#' Name \tab Type \tab Description \cr
+#' SiteID \tab character \tab The site ID in the original database\cr
+#' SiteName \tab character \tab The name of the site \cr
+#' SiteCode \tab character \tab A short unique code of the site\cr
+#' FullSiteCode \tab character \tab The complete unique code of the site \cr
+#'               in the format NETWORK:CODE, for example SNOTEL:879.
+#'               \cr
+#' Latitude \tab  numeric \tab The WGS84 latitude in decimal degrees \cr
+#' Longitude \tab numeric \tab The WGS84 longitude in decimal degrees \cr
+#' Elevation \tab numeric \tab The elevation of the site above sea level in meters \cr
+#' State \tab character \tab Only for sites in the USA: the state of the site \cr
+#' County \tab character \tab Only for sites in the USA: The county of the site \cr
+#' Comments \tab character \tab Additional comments about the sites \cr
+#'                          (note: this field is often empty)
+#'                          \cr
+#' VariableCode \tab character \tab Short code of the variable \cr
+#' FullVariableCode \tab character \tab The full variable code, for example: SNOTEL:SNWD. \cr
+#'                   Use this value as the variableCode parameter in GetValues().
+#'                   \cr
+#' VariableName \tab character \tab The name of the variable \cr
+#' ValueType \tab character \tab the type of observation: \cr
+#'            Field Observation or Derived Value
+#'            \cr
+#' DataType \tab character \tab the aggregate data type: \cr
+#'           Average, Continuous, Sporadic..
+#'           \cr
+#' GeneralCategory \tab character \tab the general category of the measurements: \cr
+#'                  Climate, Water Quality..
+#'                  \cr
+#' SampleMedium \tab character \tab the sample medium: \cr
+#'               for example water, atmosphere, soil..
+#'               \cr
+#' UnitName \tab character \tab The name of the measurement units \cr
+#' UnitType \tab character \tab the type of the measurement units \cr
+#' UnitAbbreviation \tab character \tab The abbreviation of the measurement units \cr
+#'                   (m, cm, in..)
+#'                   \cr
+#' NoDataValue \tab numeric \tab The value that indicates missing data \cr
+#' IsRegular \tab boolean \tab TRUE if the measurements are regular, FALSE otherwise \cr
+#' TimeUnitName \tab character \tab The name of the time units \cr
+#' TimeUnitAbbreviation \tab character \tab The time units abbreviation \cr
+#' TimeSupport \tab character \tab The length of the time period over which \cr
+#'              one measurement is taken
+#'              \cr
+#' Speciation \tab character \tab The chemical sample speciation \cr
+#'             (as nitrogen, as phosphorus..)
+#'             \cr
+#' methodID \tab character \tab The ID of the sensor or measurement method \cr
+#' methodCode \tab character \tab The code of the sensor or measurement method. \cr
+#'             Usually the same as methodID.
+#'             \cr
+#' methodDescription \tab character \tab The description of the sensor or \cr
+#'                    of the data collection instrumentation / measurement method.
+#'                    \cr
+#' methodLink \tab character \tab The hyperlink of the website \cr
+#'             of the sensor or measurement method.
+#'             \cr
+#' sourceID \tab character \tab The ID of the data source or author \cr
+#' organization \tab character \tab The name of the organization collecting the data \cr
+#' sourceDescription \tab character \tab The description of organization collecting the data \cr
+#' citation \tab character \tab Instruction how to cite the data \cr
+#' qualityControlLevelID \tab character \tab The ID of the quality control level. \cr
+#'                        Usually 0 means raw data and 1 means quality controlled data.
+#'                        \cr
+#' qualityControlLevelCode: \tab character \tab The code of the quality control level.
+#'                           Usually same as qualityControlLevelID.
+#'                           \cr
+#' qualityControlLevelDefinition: \tab character \tab The quality control level definition. \cr
+#' valueCount: \tab character \tab The number of observations in this time series \cr
+#' beginDateTime: \tab POSIXct \tab The local date and time of the first available \cr
+#'                              observation in this time series.
+#'                              \cr
+#' endDateTime: \tab POSIXct \tab The local date and time of the last available \cr
+#'                            observation in this time series.
+#'                            \cr
+#' beginDateTimeUTC: \tab POSIXct \tab The UTC date and time of the last available
+#'                                 observation in this time series.
+#'                                 \cr
+#' endDateTimeUTC: \tab POSIXct \tab The UTC date and time of the last available
+#'                               observation in this time series.
+#'                               \cr
+#' }
+#' The output data.frame also has attributes with information about the status:
+#' download.time, parse.time, download.status, parse.status
+#' These attributes can be used for troubleshooting WaterOneFlow/WaterML server errors.
+#' If parse status is "NO_SERIES_FOUND", then this site doesn't have any available data.
 #' @keywords waterml
 #' @export
 #' @examples
-#' GetSiteInfo("http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL",
-#'              siteCode="default:Ru5BMMA")
+#' server <- "http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx"
+#' siteInfo <- GetSiteInfo(server, siteCode="default:Ru5BMMA")
 
 GetSiteInfo <- function(server, siteCode) {
+
+  # declare the default download timeout in seconds
+  max_timeout = 360
+
+  # declare empty return data frame
+  df <- data.frame()
+
+  # trim any leading and trailing whitespaces in server
+  server <- gsub("^\\s+|\\s+$", "", server)
 
   # if server ends with ?WSDL or ?wsdl, we assume that service is SOAP
   # otherwise, assume that service is REST
   SOAP <- TRUE
+
+  # if server ends with .asmx, we also assume that the service is SOAP and we add ?WSDL
+  m1 <- regexpr("asmx$", server)
+  if (m1 > 1) {
+    server <- paste(server, "WSDL", sep="?")
+  }
+
+
+  # if server ends with ?WSDL or ?wsdl, we assume that service is SOAP
+  # otherwise, assume that service is REST
   m <- regexpr("?WSDL|wsdl", server)
   if (m > 1) {
     url <- substr(server, 0, m - 2)
@@ -34,229 +141,442 @@ GetSiteInfo <- function(server, siteCode) {
     methodName <- "GetSiteInfoObject"
 
     SOAPAction <- paste(namespace, methodName, sep="")
+    headers <- c("Content-Type" = "text/xml","SOAPAction" = SOAPAction)
     envelope <- MakeSOAPEnvelope(namespace, methodName, c(site=siteCode))
-    response <- POST(url, body = envelope,
-                     add_headers("Content-Type" = "text/xml", "SOAPAction" = SOAPAction))
-    status.code <- http_status(response)$category
-    print(paste("GetSiteInfo from", url, "...", status.code))
-    WaterML <- content(response, as="text")
-    SOAPdoc <- tryCatch({
-      xmlRoot(xmlTreeParse(WaterML, getDTD=FALSE, useInternalNodes = TRUE))
-    }, error = function(err) {
-      print(paste("error fetching siteInfo from URL:", url, err))
-      return(NULL)
-    })
-    #check soap:Header
-    body <- 1
-    if (xmlName(SOAPdoc[[1]]) == "Header") {
-      body <- 2
+
+    print(paste("downloading SiteInfo from:", url))
+
+    downloaded <- FALSE
+    download.time <- system.time(
+      err <- tryCatch({
+        response <- POST(url, body = envelope, add_headers(headers),
+                         timeout(max_timeout))
+        status <- http_status(response)$message
+        downloaded <- TRUE
+        },error = function(e) {
+          print(conditionMessage(e))
+        }
+      )
+    )
+    if (!downloaded) {
+      attr(df, "download.time") <- download.time["elapsed"]
+      attr(df, "download.status") <- err
+      attr(df, "parse.time") <- NA
+      attr(df, "parse.status") <- NA
+      return(df)
     }
-    #get the variablesResponse content element
-    doc <- SOAPdoc[[body]][[1]][[1]]
-    doc
+
+    status.code <- http_status(response)$category
+
+    print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
+
   } else {
     #if the service is REST
-    doc <- tryCatch({
-      xmlRoot(xmlTreeParse(url, getDTD=FALSE, useInternalNodes = TRUE))
-    }, error = function(err) {
-      print(paste("error fetching siteInfo from URL:", url))
-      return(NULL)
-    })
+    print(paste("downloading SiteInfo from:", server))
+    downloaded <- FALSE
+    download.time <- system.time(
+      err <- tryCatch({
+        response <- GET(server, timeout(max_timeout))
+        status <- http_status(response)$message
+        downloaded <- TRUE
+        },error = function(e) {
+          print(conditionMessage(e))
+        }
+      )
+    )
+    if (!downloaded) {
+      attr(df, "download.time") <- download.time["elapsed"]
+      attr(df, "download.status") <- err
+      attr(df, "parse.time") <- NA
+      attr(df, "parse.status") <- NA
+      return(df)
+    }
+
+    status.code <- http_status(response)$category
+    version <- "1.1"
+
+    print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
+  }
+  attr(df, "download.time") <- download.time["elapsed"]
+  attr(df, "download.status") <- status.code
+
+  ######################################################
+  # Parsing the WaterML XML Data                       #
+  ######################################################
+  begin.parse.time <- Sys.time()
+
+  doc <- content(response)
+
+  # specify the namespace information
+  ns <- WaterOneFlowNamespace(version)
+
+  #try to find faultstring to look for an error
+  fault <- xpathSApply(doc, "//soap:Fault", xmlValue, namespaces=ns)
+  if (length(fault) > 0) {
+    print(paste("SERVER ERROR in GetSiteInfo ", as.character(fault), sep=":"))
+    attr(df, "download.time") <- download.time["elapsed"]
+    attr(df, "download.status") <- as.character(fault)
+    attr(df, "parse.time") <- NA
+    attr(df, "parse.status") <- "SERVER FAULT"
+    return(df)
   }
 
-  #the seriesCatalog element
-  sc <- doc[[2]][[2]]
-  N <- xmlSize(sc)
+  SiteName = xpathSApply(doc, "//sr:siteName", xmlValue, namespaces=ns)
+  N <- length(SiteName)
+  SiteCode = xpathSApply(doc, "//sr:siteCode", xmlValue, namespaces=ns)
+  Network = xpathSApply(doc, "//sr:siteCode", xmlGetAttr, name="network", namespaces=ns)
+
+  SiteID <- xpathSApply(doc, "//sr:siteCode", xmlGetAttr, name="siteID", namespaces=ns)
+  SiteID <- unlist(SiteID)
+  numSiteIDs <- length(SiteID)
+  if (numSiteIDs != N) {
+    SiteID <- SiteCode
+  }
+
+  Latitude <- xpathSApply(doc, "//sr:latitude", xmlValue, namespaces=ns)
+  Longitude = xpathSApply(doc, "//sr:longitude", xmlValue, namespaces=ns)
+
+  Elevation <- xpathSApply(doc, "//sr:elevation_m", xmlValue, namespaces=ns)
+  numElevations <- length(Elevation)
+  if (numElevations != N) {
+    Elevation <- NA
+  }
+
+  # State, County, Comments: different tags for WaterML 1.0 and 1.1
+  if (version=="1.1"){
+    State = xpathSApply(doc, "//sr:siteProperty[@name='State']", xmlValue, namespaces=ns)
+    County = xpathSApply(doc, "//sr:siteProperty[@name='County']", xmlValue, namespaces=ns)
+    Comments = xpathSApply(doc, "//sr:siteProperty[@name='Site Comments']", xmlValue, namespaces=ns)
+  } else {
+    State = xpathSApply(doc, "//sr:note[@title='State']", xmlValue, namespaces=ns)
+    County = xpathSApply(doc, "//sr:note[@title='County']", xmlValue, namespaces=ns)
+    Comments = NA
+  }
+  # Check for empty values of state, county, comments
+  numStates <- length(State)
+  if (numStates != N) {
+    State <- NA
+  }
+  numCounties <- length(County)
+  if (numCounties != N) {
+    County <- NA
+  }
+  numComments <- length(Comments)
+  if (numComments != N) {
+    Comments <- NA
+  }
+
+  VariableCode <- xpathSApply(doc, "//sr:variableCode", xmlValue, namespaces=ns)
+  N <- length(VariableCode)
+
+  # Check for 'No Series Found' case
+  if (N==0) {
+    print(paste("NOTE: 0 time series found for site:", siteCode))
+
+    end.parse.time <- Sys.time()
+    parse.time <- as.numeric(difftime(end.parse.time, begin.parse.time, units="sec"))
+
+    attr(df, "download.time") <- download.time["elapsed"]
+    attr(df, "download.status") <- "success"
+    attr(df, "parse.time") <- parse.time
+    attr(df, "parse.status") <- "NO_SERIES_FOUND"
+    return(df)
+  }
+
+  VariableName <- xpathSApply(doc, "//sr:variableName", xmlValue, namespaces=ns)
+
+  VariableID <- unlist(xpathSApply(doc, "//sr:variableCode", xmlGetAttr, name="variableID", namespaces=ns))
+  if (length(VariableID) == 0) { VariableID <- VariableCode }
+
+  Vocabulary <- unlist(xpathSApply(doc, "//sr:variableCode", xmlGetAttr, name="vocabulary", namespaces=ns))
+
+  #######################################################################################
+  # START of SPECIAL CASE: process variable: use special case for WaterML 1.0           #
+  #for WaterML 1.0 we must use a loop, because elements with unknown values are missing #
+  #######################################################################################
+  if (version == "1.0") {
+    allVariables <- getNodeSet(doc, "//sr:series/sr:variable", namespaces=ns)
+    i <- 1
+    if (length(allVariables) < N) {
+      print("Bad XML format: not enough details about the variables")
+
+      end.parse.time <- Sys.time()
+      parse.time <- as.numeric(difftime(end.parse.time, begin.parse.time, units="sec"))
+
+      attr(df, "download.time") <- download.time["elapsed"]
+      attr(df, "download.status") <- "success"
+      attr(df, "parse.time") <- parse.time
+      attr(df, "parse.status") <- "BAD_XML_FORMAT"
+      return(df)
+    }
+    #allocate vectors for variables
+    ValueType=rep("",N)
+    DataType=rep("",N)
+    GeneralCategory=rep("",N)
+    SampleMedium=rep("",N)
+    UnitName=rep("",N)
+    UnitType=rep("",N)
+    UnitAbbreviation=rep("",N)
+    NoDataValue=rep(NA,N)
+    IsRegular=rep("",N)
+    TimeUnitName=rep("",N)
+    TimeUnitAbbreviation=rep("",N)
+    TimeSupport=rep("",N)
+    Speciation=rep("",N)
+
+    for (i in 1:N) {
+      varObj <- allVariables[[i]]
+      v <- unlist(xmlToList(varObj))
+      ValueType[i] <- v["valueType"]
+      DataType[i] <- v["dataType"]
+      if (!is.null(v["generalCategory"])) {
+        GeneralCategory[i] <- v["generalCategory"]
+      }
+      if (!is.null(v["sampleMedium"])) {
+        SampleMedium[i] <- v["sampleMedium"]
+      }
+      UnitName[i] <- v["units.text"]
+      if (!is.null(v["units..attrs.unitsType"])) {
+        UnitType[i] <- v["units..attrs.unitsType"]
+      }
+      UnitAbbreviation[i] <- v["units..attrs.unitsAbbreviation"]
+      IsRegular[i] <- ifelse(is.na(v["timeSupport..attrs.isRegular"]), v["timeSupport.isRegular"],
+                                v["timeSupport..attrs.isRegular"])
+      TimeUnitName[i] <- v["timeSupport.unit.UnitDescription"]
+      if (is.na(TimeUnitName[i])) {
+        TimeUnitName[i] <- v["timeSupport.unit.UnitName"]
+      }
+      TimeUnitAbbreviation[i] <- v["timeSupport.unit.UnitAbbreviation"]
+      TimeSupport[i] <- v["timeSupport.timeInterval"]
+
+      if (!is.null(v["NoDataValue"])) {
+        NoDataValue[i] <- as.numeric(v["NoDataValue"])
+      }
+    }
+
+    MethodID <- unlist(xpathSApply(doc, "//sr:Method", xmlGetAttr, name="methodID", namespaces=ns))
+    MethodCode <- xpathSApply(doc, "//sr:MethodCode", xmlValue, namespaces=ns)
+
+    MethodDescription <- xpathSApply(doc, "//sr:MethodDescription", xmlValue, namespaces=ns)
+    if (length(MethodDescription) < N) { MethodDescription <- NA }
+
+    MethodLink <- xpathSApply(doc, "//sr:MethodLink", xmlValue, namespaces=ns)
+    if (length(MethodLink) < N) { MethodLink <- NA }
+
+    if (length(MethodID) < N & length(MethodCode) == N) {
+      MethodID <- MethodCode
+    }
+    if (length(MethodCode) < N & length(MethodID) == N) {
+      MethodCode <- MethodID
+    }
+    if (length(MethodID) < N) { MethodID <- NA }
+    if (length(MethodCode) < N) { MethodCode <- NA }
+
+    SourceID <- unlist(xpathSApply(doc, "//sr:Source", xmlGetAttr, name="sourceID", namespaces=ns))
+    if (length(SourceID) < N) { SourceID <- NA }
+
+    Organization <- xpathSApply(doc, "//sr:Organization", xmlValue, namespaces=ns)
+    if (length(Organization) < N) { Organization <- NA }
+
+    SourceDescription <- xpathSApply(doc, "//sr:SourceDescription", xmlValue, namespaces=ns)
+    if (length(SourceDescription) < N) { SourceDescription <- NA }
+
+    Citation <- xpathSApply(doc, "//sr:Citation", xmlValue, namespaces=ns)
+    if (length(Citation) < N) { Citation <- NA }
+
+    QualityControlLevelID <- unlist(xpathSApply(doc, "//sr:QualityControlLevel", xmlGetAttr,
+                                      name="qualityControlLevelID", namespaces=ns))
+
+    QualityControlLevelCode <- xpathSApply(doc, "//sr:qualityControlLevelCode", xmlValue, namespaces=ns)
+
+    if (length(QualityControlLevelID) < N & length(QualityControlLevelCode == N)) {
+      QualityControlLevelID <- QualityControlLevelCode
+    }
+    if (length(QualityControlLevelCode) < N & length(QualityControlLevelID == N)) {
+      QualityControlLevelCode <- QualityControlLevelID
+    }
+    if (length(QualityControlLevelID) < N) { QualityControlLevelID <- NA }
+    if (length(QualityControlLevelCode) < N) { QualityControlLevelCode <- NA }
+
+    QualityControlLevelDefinition=xpathSApply(doc, "//sr:QualityControlLevel", xmlValue, namespaces=ns)
+    if (length(QualityControlLevelDefinition) < N) { QualityControlLevelDefinition <- NA }
+
+    ValueCount <- xpathSApply(doc, "//sr:valueCount", xmlValue, namespaces=ns)
+
+    BeginDateTime <- xpathSApply(doc, "//sr:beginDateTime", xmlValue, namespaces=ns)
+    EndDateTime <- xpathSApply(doc, "//sr:endDateTime", xmlValue, namespaces=ns)
+
+    BeginDateTimeUTC <- xpathSApply(doc, "//sr:beginDateTimeUTC", xmlValue, namespaces=ns)
+    if (length(BeginDateTimeUTC) == 0) { BeginDateTimeUTC <- BeginDateTime }
+
+    EndDateTimeUTC <- xpathSApply(doc, "//sr:endDateTimeUTC", xmlValue, namespaces=ns)
+    if (length(EndDateTimeUTC) == 0) { EndDateTimeUTC <- EndDateTime }
+  #################################################################################################
+  # END of SPECIAL CASE of WaterML 1.0                                                            #
+  #################################################################################################
+  } else {
+
+    ValueType <- xpathSApply(doc, "//sr:valueType", xmlValue, namespaces=ns)
+    DataType <- xpathSApply(doc, "//sr:dataType", xmlValue, namespaces=ns)
+    GeneralCategory <- xpathSApply(doc, "//sr:generalCategory", xmlValue, namespaces=ns)
+    SampleMedium <- xpathSApply(doc, "//sr:sampleMedium", xmlValue, namespaces=ns)
+
+    UnitName <- xpathSApply(doc, "//sr:units/sr:unitName", xmlValue, namespaces=ns)
+    UnitType <- xpathSApply(doc, "//sr:units/sr:unitType", xmlValue, namespaces=ns)
+    UnitAbbreviation <- xpathSApply(doc,
+      "//sr:variable/sr:units/*[self::sr:unitsAbbreviation or self::sr:unitAbbreviation]",
+      xmlValue, namespaces=ns)
+
+    #if UnitName is not found, then we look for /variable/unit instead
+    if (length(UnitName) == 0) {
+      UnitName <- xpathSApply(doc, "//sr:variable/sr:unit/sr:unitName", xmlValue, namespaces=ns)
+      UnitType <- xpathSApply(doc, "//sr:variable/sr:unit/sr:unitType", xmlValue, namespaces=ns)
+      UnitAbbreviation <- xpathSApply(doc,
+        "//sr:variable/sr:unit/*[self::sr:unitsAbbreviation or self::sr:unitAbbreviation]",
+        xmlValue, namespaces=ns)
+    }
+
+    NoDataValue <- xpathSApply(doc, "//sr:noDataValue", xmlValue, namespaces=ns)
+
+    IsRegular <- unlist(xpathSApply(doc, "//sr:timeScale", xmlGetAttr, name="isRegular", namespaces=ns))
+    if (length(IsRegular) < N) {
+      IsRegular <- (DataType != "Sporadic")
+    }
+
+    TimeUnitName <- xpathSApply(doc, "//sr:timeScale/sr:unit/sr:unitName", xmlValue, namespaces=ns)
+    TimeUnitName <- unlist(TimeUnitName)
+    if (length(TimeUnitName) < N) { TimeUnitName <- NA }
+
+    TimeUnitAbbreviation <- xpathSApply(doc,
+      "//sr:timeScale/sr:unit/*[self::sr:unitsAbbreviation or self::sr:unitAbbreviation]", xmlValue, namespaces=ns)
+    TimeUnitAbbreviation <- unlist(TimeUnitAbbreviation)
+    if (length(TimeUnitAbbreviation) < N) { TimeUnitAbbreviation <- NA }
+
+    TimeSupport <- xpathSApply(doc, "//sr:timeSupport", xmlValue, namespaces=ns)
+    Speciation <- xpathSApply(doc, "//sr:variable/sr:speciation", xmlValue, namespaces=ns)
+
+    BeginDateTime <- xpathSApply(doc, "//sr:beginDateTime", xmlValue, namespaces=ns)
+    EndDateTime <- xpathSApply(doc, "//sr:endDateTime", xmlValue, namespaces=ns)
+
+    BeginDateTimeUTC <- xpathSApply(doc, "//sr:beginDateTimeUTC", xmlValue, namespaces=ns)
+    if (length(BeginDateTimeUTC) == 0) { BeginDateTimeUTC <- BeginDateTime }
+
+    EndDateTimeUTC <- xpathSApply(doc, "//sr:endDateTimeUTC", xmlValue, namespaces=ns)
+    if (length(EndDateTimeUTC) == 0) { EndDateTimeUTC <- EndDateTime }
+
+    ValueCount <- xpathSApply(doc, "//sr:valueCount", xmlValue, namespaces=ns)
+
+    MethodID <- unlist(xpathSApply(doc, "//sr:method", xmlGetAttr, name="methodID", namespaces=ns))
+
+    MethodCode <- xpathSApply(doc, "//sr:methodCode", xmlValue, namespaces=ns)
+
+    MethodDescription <- xpathSApply(doc, "//sr:methodDescription", xmlValue, namespaces=ns)
+    if (length(MethodDescription) < N) { MethodDescription <- NA }
+
+    MethodLink <- xpathSApply(doc, "//sr:methodLink", xmlValue, namespaces=ns)
+    if (length(MethodLink) < N) { MethodLink <- NA }
+
+    if (length(MethodID) < N & length(MethodCode) == N) {
+      MethodID <- MethodCode
+    }
+    if (length(MethodCode) < N & length(MethodID) == N) {
+      MethodCode <- MethodID
+    }
+    if (length(MethodID) < N) { MethodID <- NA }
+    if (length(MethodCode) < N) { MethodCode <- NA }
+
+    SourceID <- unlist(xpathSApply(doc, "//sr:source", xmlGetAttr, name="sourceID", namespaces=ns))
+    if (length(SourceID) < N) { SourceID <- NA }
+
+    Organization <- xpathSApply(doc, "//sr:organization", xmlValue, namespaces=ns)
+    if (length(Organization) < N) { Organization <- NA }
+
+    SourceDescription <- xpathSApply(doc, "//sr:sourceDescription", xmlValue, namespaces=ns)
+    if (length(SourceDescription) < N) { SourceDescription <- NA }
+
+    Citation <- xpathSApply(doc, "//sr:citation", xmlValue, namespaces=ns)
+    if (length(Citation) < N) { Citation <- NA }
+
+    QualityControlLevelID=unlist(xpathSApply(doc, "//sr:qualityControlLevel", xmlGetAttr,
+                                      name="qualityControlLevelID", namespaces=ns))
+    QualityControlLevelCode=xpathSApply(doc, "//sr:qualityControlLevelCode", xmlValue, namespaces=ns)
+
+    if (length(QualityControlLevelID) < N & length(QualityControlLevelCode == N)) {
+      QualityControlLevelID <- QualityControlLevelCode
+    }
+    if (length(QualityControlLevelCode) < N & length(QualityControlLevelID == N)) {
+      QualityControlLevelCode <- QualityControlLevelID
+    }
+    if (length(QualityControlLevelID) < N) { QualityControlLevelID <- NA }
+    if (length(QualityControlLevelCode) < N) { QualityControlLevelCode <- NA }
+
+    QualityControlLevelDefinition=xpathSApply(doc, "//sr:definition", xmlValue, namespaces=ns)
+    if (length(QualityControlLevelDefinition) < N) { QualityControlLevelDefinition <- NA }
+  }
+
   #define the columns for the output data frame
-  df <- data.frame(SiteName=rep("",N),
-                   SiteID=rep(NA,N),
-                   SiteCode=rep("",N),
-                   FullSiteCode=rep("",N),
-                   Latitude=rep(NA,N),
-                   Longitude=rep(NA,N),
-                   Elevation=rep(NA,N),
-                   State=rep("",N),
-                   County=rep("",N),
-                   Comments=rep("",N),
-                   VariableCode=rep("",N),
-                   FullVariableCode=rep("",N),
-                   VariableName=rep("",N),
-                   ValueType=rep("",N),
-                   DataType=rep("",N),
-                   GeneralCategory=rep("",N),
-                   SampleMedium=rep("",N),
-                   UnitName=rep("",N),
-                   UnitType=rep("",N),
-                   UnitAbbreviation=rep("",N),
-                   NoDataValue=rep(NA,N),
-                   IsRegular=rep("",N),
-                   TimeUnitName=rep("",N),
-                   TimeUnitAbbreviation=rep("",N),
-                   TimeSupport=rep("",N),
-                   Speciation=rep("",N),
-                   methodID=rep("",N),
-                   methodCode=rep("",N),
-                   methodDescription=rep("",N),
-                   methodLink=rep("",N),
-                   sourceID=rep("",N),
-                   organization=rep("",N),
-                   sourceDescription=rep("",N),
-                   citation=rep("",N),
-                   qualityControlLevelID=rep("",N),
-                   qualityControlLevelCode=rep("",N),
-                   qualityControlLevelDefinition=rep("",N),
-                   valueCount=rep(NA,N),
-                   beginDateTime=rep(as.POSIXct(NA,"")),
-                   endDateTime=rep(as.POSIXct(NA,"")),
+  df <- data.frame(SiteName=rep(SiteName, N),
+                   SiteID=rep(SiteID, N),
+                   SiteCode=rep(SiteCode, N),
+                   FullSiteCode = rep(paste(Network, SiteCode, sep=":"), N),
+                   Latitude=rep(as.numeric(Latitude), N),
+                   Longitude=rep(as.numeric(Longitude), N),
+                   Elevation=rep(as.numeric(Elevation), N),
+                   State=rep(State, N),
+                   County=rep(County, N),
+                   Comments=rep(Comments, N),
+                   VariableCode=VariableCode,
+                   FullVariableCode=paste(Vocabulary, VariableCode, sep=":"),
+                   VariableName=VariableName,
+                   ValueType=ValueType,
+                   DataType=DataType,
+                   GeneralCategory=GeneralCategory,
+                   SampleMedium=SampleMedium,
+                   UnitName=UnitName,
+                   UnitType=UnitType,
+                   UnitAbbreviation=UnitAbbreviation,
+                   NoDataValue=as.numeric(NoDataValue),
+                   IsRegular=IsRegular,
+                   TimeUnitName=TimeUnitName,
+                   TimeUnitAbbreviation=TimeUnitAbbreviation,
+                   TimeSupport=TimeSupport,
+                   Speciation=Speciation,
+                   methodID=MethodID,
+                   methodCode=MethodCode,
+                   methodDescription=MethodDescription,
+                   methodLink=MethodLink,
+                   sourceID=SourceID,
+                   organization=Organization,
+                   sourceDescription=SourceDescription,
+                   citation=Citation,
+                   qualityControlLevelID=QualityControlLevelID,
+                   qualityControlLevelCode=QualityControlLevelCode,
+                   qualityControlLevelDefinition=QualityControlLevelDefinition,
+                   valueCount=ValueCount,
+                   beginDateTime=as.POSIXct(strptime(BeginDateTime, "%Y-%m-%dT%H:%M:%S")),
+                   endDateTime=as.POSIXct(strptime(EndDateTime, "%Y-%m-%dT%H:%M:%S")),
+                   beginDateTimeUTC=as.POSIXct(strptime(BeginDateTimeUTC, "%Y-%m-%dT%H:%M:%S")),
+                   endDateTimeUTC=as.POSIXct(strptime(EndDateTimeUTC, "%Y-%m-%dT%H:%M:%S")),
                    stringsAsFactors=FALSE)
 
-  #parse the site: only needed one-time
-  siteInfo <- doc[[2]][[1]]
-  s <- xmlToList(siteInfo)
-  siteName <- s$siteName
-  siteCode <- s$siteCode$text
-  network <- s$siteCode$.attrs["network"]
-  siteID <- ifelse(is.null(s$siteCode$.attrs["siteID"]), NA, s$siteCode$.attrs["siteID"])
-  fullSiteCode <- paste(network, siteCode, sep=":")
-  latitude <- as.numeric(s$geoLocation$geogLocation$latitude)
-  longitude <- as.numeric(s$geoLocation$geogLocation$longitude)
-  elevation <- ifelse(is.null(s$elevation_m), NA, s$elevation_m)
+  if (nrow(df) == 0) {
+    print(paste("NOTE: 0 time series found for site:", siteCode))
 
-  comments <- NA
-  state <- NA
-  county <- NA
+    end.parse.time <- Sys.time()
+    parse.time <- as.numeric(difftime(end.parse.time, begin.parse.time, units="sec"))
 
-  numElements <- xmlSize(siteInfo)
-  for (j in 1: numElements){
-    element <- siteInfo[[j]]
-
-    if (is.null(element)) {
-      next
-    }
-    if (xmlName(element) != 'siteProperty') next
-
-    attr <- xmlAttrs(element)["name"]
-    if (attr == 'SiteComments') {
-      comments <- xmlValue(element)
-    }
-    if (attr == 'Site Comments') {
-      comments <- xmlValue(element)
-    }
-    if (attr == 'State') {
-      state <- xmlValue(element)
-    }
-    if (attr == 'County') {
-      county <- xmlValue(element)
-    }
+    attr(df, "download.time") <- download.time["elapsed"]
+    attr(df, "download.status") <- "success"
+    attr(df, "parse.time") <- parse.time
+    attr(df, "parse.status") <- "NO_SERIES_FOUND"
+    return(df)
   }
 
-
-  #parse the variables, methods, sources, qc levels
-  i <- 1
-  for(i in 1:N){
-
-    series <- sc[[i]]
-    serieList <- xmlToList(series)
-    #variable-related fields
-    v <- unlist(serieList$variable)
-
-    varcode <- v["variableCode.text"]
-    df$VariableCode[i] <- varcode
-    df$FullVariableCode[i] <- paste(v["variableCode..attrs.vocabulary"], varcode, sep=":")
-    df$VariableName[i] <- v["variableName"]
-    df$ValueType[i] <- v["valueType"]
-    df$DataType[i] <- v["dataType"]
-    df$GeneralCategory[i] <- v["generalCategory"]
-    df$SampleMedium[i] <- v["sampleMedium"]
-    if (version == "1.1") {
-      df$UnitName[i] <- v["unit.unitName"]
-      df$UnitType[i] <- v["unit.unitType"]
-      df$UnitAbbreviation[i] <- v["unit.unitAbbreviation"]
-      df$IsRegular[i] <- ifelse(is.na(v["timeScale..attrs.isRegular"]), v["timeScale.isRegular"],
-                                v["timeScale..attrs.isRegular"])
-      df$TimeUnitName[i] <- v["timeScale.unit.unitName"]
-      df$TimeUnitAbbreviation[i] <- v["timeScale.unit.unitAbbreviation"]
-      df$TimeSupport[i] <- v["timeScale.timeSupport"]
-      df$NoDataValue[i] <- as.numeric(v["noDataValue"])
-    } else {
-      df$UnitName[i] <- v["units.text"]
-      df$UnitType[i] <- v["units..attrs.unitsType"]
-      df$UnitAbbreviation[i] <- v["units..attrs.unitsAbbreviation"]
-      df$IsRegular[i] <- ifelse(is.na(v["timeSupport..attrs.isRegular"]), v["timeSupport.isRegular"],
-                                v["timeSupport..attrs.isRegular"])
-      df$TimeUnitName[i] <- v["timeSupport.unit.UnitDescription"]
-      df$TimeUnitAbbreviation[i] <- v["timeSupport.unit.UnitAbbreviation"]
-      df$TimeSupport[i] <- v["timeSupport.timeInterval"]
-      df$NoDataValue[i] <- as.numeric(v["NoDataValue"])
-    }
-    df$Speciation[i] <- v["speciation"]
-
-    #method-related fields (use either code or id)
-    if (version == "1.0") {
-      meth <- serieList$Method
-    } else {
-      meth <- serieList$method
-    }
-    df$methodCode[i] <- ifelse(is.null(meth$methodCode), NA, meth$methodCode)
-    df$methodDescription[i] <- ifelse(is.null(meth$methodDescription), NA, meth$methodDescription)
-    df$methodLink[i] <- ifelse(is.null(meth$methodLink),NA,meth$methodLink)
-    df$methodID[i] <- ifelse(is.null(meth$.attrs["methodID"]),NA,meth$.attrs["methodID"])
-    if (is.na(df$methodID[i]) & !is.na(df$methodCode[i])) {
-      df$methodID[i] <- df$methodCode[i]
-    }
-    if (is.na(df$methodCode[i]) & !is.na(df$methodID[i])) {
-      df$methodCode[i] <- df$methodID[i]
-    }
-    #source-related fields
-    if (version == "1.0") {
-      src <- serieList$Source
-      df$organization[i] <- src$Organization
-      df$sourceDescription[i] <- src$SourceDescription
-    } else {
-      src <- serieList$source
-      df$organization[i] <- src$organization
-      df$sourceDescription[i] <- src$sourceDescription
-    }
-
-    df$citation[i] <- ifelse(is.null(src$citation), NA, src$citation)
-    df$sourceID[i] <- ifelse(is.null(src$.attrs["sourceID"]),NA,src$.attrs["sourceID"])
-    #quality control-related fields (use either code or id)
-    if (version == "1.0") {
-      qc <- serieList$QualityControlLevel
-      df$qualityControlLevelID[i] <- ifelse(is.null(qc["QualityControlLevelID"]), NA, qc["QualityControlLevelID"])
-    } else {
-      qc <- serieList$qualityControlLevel
-      df$qualityControlLevelID[i] <- ifelse(is.null(qc[".attrs"]["qualityControlLevelID"]), NA, qc[".attrs"]["qualityControlLevelID"])
-    }
-
-
-    df$qualityControlLevelCode[i] <- ifelse(is.null(qc["qualityControlLevelCode"]), NA, qc["qualityControlLevelCode"])
-    if (is.na(df$qualityControlLevelID[i]) & !is.na(df$qualityControlLevelCode[i])) {
-      df$qualityControlLevelID[i] <- df$qualityControlLevelCode[i]
-    }
-    if (is.na(df$qualityControlLevelCode[i]) & !is.na(df$qualityControlLevelID[i])) {
-      df$qualityControlLevelCode[i] <- df$qualityControlLevelID[i]
-    }
-
-    df$qualityControlLevelDefinition[i] <- qc["definition"]
-    #time interval-related fields
-    df$valueCount[i] <- serieList$valueCount
-    timeInterval <- serieList$variableTimeInterval
-    df$beginDateTime[i] <- as.POSIXct(timeInterval$beginDateTime)
-    df$endDateTime[i] <- as.POSIXct(timeInterval$endDateTime)
-    #site related fields
-    df$SiteName[i] <- siteName
-    df$SiteID[i] <- siteID
-    df$SiteCode[i] <- siteCode
-    df$FullSiteCode[i] <- fullSiteCode
-    df$Latitude[i] <- latitude
-    df$Longitude[i] <- longitude
-    df$Elevation[i] <- elevation
-    df$Comments[i] <- comments
-    df$State[i] <- state
-    df$County[i] <- county
-
-
-  }
+  end.parse.time <- Sys.time()
+  parse.time <- as.numeric(difftime(end.parse.time, begin.parse.time, units="sec"))
+  attr(df, "download.time") <- download.time["elapsed"]
+  attr(df, "download.status") <- "success"
+  attr(df, "parse.time") <- parse.time
+  attr(df, "parse.status") <- "OK"
   return(df)
 }

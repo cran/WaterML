@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Jiri Kadlec" />
+
+<meta name="date" content="2015-06-27" />
+
+<title>WaterML R Package Tutorial</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<link href="data:text/css,body%20%7B%0A%20%20background%2Dcolor%3A%20%23fff%3B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20max%2Dwidth%3A%20700px%3B%0A%20%20overflow%3A%20visible%3B%0A%20%20padding%2Dleft%3A%202em%3B%0A%20%20padding%2Dright%3A%202em%3B%0A%20%20font%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0A%20%20font%2Dsize%3A%2014px%3B%0A%20%20line%2Dheight%3A%201%2E35%3B%0A%7D%0A%0A%23header%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0A%0A%23TOC%20%7B%0A%20%20clear%3A%20both%3B%0A%20%20margin%3A%200%200%2010px%2010px%3B%0A%20%20padding%3A%204px%3B%0A%20%20width%3A%20400px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20border%2Dradius%3A%205px%3B%0A%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20font%2Dsize%3A%2013px%3B%0A%20%20line%2Dheight%3A%201%2E3%3B%0A%7D%0A%20%20%23TOC%20%2Etoctitle%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%20%20font%2Dsize%3A%2015px%3B%0A%20%20%20%20margin%2Dleft%3A%205px%3B%0A%20%20%7D%0A%0A%20%20%23TOC%20ul%20%7B%0A%20%20%20%20padding%2Dleft%3A%2040px%3B%0A%20%20%20%20margin%2Dleft%3A%20%2D1%2E5em%3B%0A%20%20%20%20margin%2Dtop%3A%205px%3B%0A%20%20%20%20margin%2Dbottom%3A%205px%3B%0A%20%20%7D%0A%20%20%23TOC%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dleft%3A%20%2D2em%3B%0A%20%20%7D%0A%20%20%23TOC%20li%20%7B%0A%20%20%20%20line%2Dheight%3A%2016px%3B%0A%20%20%7D%0A%0Atable%20%7B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dcolor%3A%20%23DDDDDD%3B%0A%20%20border%2Dstyle%3A%20outset%3B%0A%20%20border%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0A%20%20border%2Dwidth%3A%202px%3B%0A%20%20padding%3A%205px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%20%20line%2Dheight%3A%2018px%3B%0A%20%20padding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0A%20%20border%2Dleft%2Dstyle%3A%20none%3B%0A%20%20border%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Ap%20%7B%0A%20%20margin%3A%200%2E5em%200%3B%0A%7D%0A%0Ablockquote%20%7B%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20padding%3A%200%2E25em%200%2E75em%3B%0A%7D%0A%0Ahr%20%7B%0A%20%20border%2Dstyle%3A%20solid%3B%0A%20%20border%3A%20none%3B%0A%20%20border%2Dtop%3A%201px%20solid%20%23777%3B%0A%20%20margin%3A%2028px%200%3B%0A%7D%0A%0Adl%20%7B%0A%20%20margin%2Dleft%3A%200%3B%0A%7D%0A%20%20dl%20dd%20%7B%0A%20%20%20%20margin%2Dbottom%3A%2013px%3B%0A%20%20%20%20margin%2Dleft%3A%2013px%3B%0A%20%20%7D%0A%20%20dl%20dt%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%7D%0A%0Aul%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%7D%0A%20%20ul%20li%20%7B%0A%20%20%20%20list%2Dstyle%3A%20circle%20outside%3B%0A%20%20%7D%0A%20%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dbottom%3A%200%3B%0A%20%20%7D%0A%0Apre%2C%20code%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20color%3A%20%23333%3B%0A%7D%0Apre%20%7B%0A%20%20white%2Dspace%3A%20pre%2Dwrap%3B%20%20%20%20%2F%2A%20Wrap%20long%20lines%20%2A%2F%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20margin%3A%205px%200px%2010px%200px%3B%0A%20%20padding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Acode%20%7B%0A%20%20font%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0A%20%20font%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0A%20%20padding%3A%202px%200px%3B%0A%7D%0A%0Adiv%2Efigure%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0A%20%20background%2Dcolor%3A%20%23FFFFFF%3B%0A%20%20padding%3A%202px%3B%0A%20%20border%3A%201px%20solid%20%23DDDDDD%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20margin%3A%200%205px%3B%0A%7D%0A%0Ah1%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%20%20font%2Dsize%3A%2035px%3B%0A%20%20line%2Dheight%3A%2040px%3B%0A%7D%0A%0Ah2%20%7B%0A%20%20border%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20padding%2Dbottom%3A%202px%3B%0A%20%20font%2Dsize%3A%20145%25%3B%0A%7D%0A%0Ah3%20%7B%0A%20%20border%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20font%2Dsize%3A%20120%25%3B%0A%7D%0A%0Ah4%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0A%20%20margin%2Dleft%3A%208px%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Ah5%2C%20h6%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23ccc%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Aa%20%7B%0A%20%20color%3A%20%230033dd%3B%0A%20%20text%2Ddecoration%3A%20none%3B%0A%7D%0A%20%20a%3Ahover%20%7B%0A%20%20%20%20color%3A%20%236666ff%3B%20%7D%0A%20%20a%3Avisited%20%7B%0A%20%20%20%20color%3A%20%23800080%3B%20%7D%0A%20%20a%3Avisited%3Ahover%20%7B%0A%20%20%20%20color%3A%20%23BB00BB%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%0A%2F%2A%20Class%20described%20in%20https%3A%2F%2Fbenjeffrey%2Ecom%2Fposts%2Fpandoc%2Dsyntax%2Dhighlighting%2Dcss%0A%20%20%20Colours%20from%20https%3A%2F%2Fgist%2Egithub%2Ecom%2Frobsimmons%2F1172277%20%2A%2F%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Keyword%20%2A%2F%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%2F%2A%20DataType%20%2A%2F%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%2F%2A%20DecVal%20%28decimal%20values%29%20%2A%2F%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20BaseN%20%2A%2F%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Float%20%2A%2F%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Char%20%2A%2F%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20String%20%2A%2F%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%2F%2A%20Comment%20%2A%2F%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%2F%2A%20OtherToken%20%2A%2F%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20AlertToken%20%2A%2F%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Function%20calls%20%2A%2F%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%2F%2A%20ErrorTok%20%2A%2F%0A%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+<div id="header">
+<h1 class="title">WaterML R Package Tutorial</h1>
+<h4 class="author"><em>Jiri Kadlec</em></h4>
+<h4 class="date"><em>2015-06-27</em></h4>
+</div>
+
+
+<p>This tutorial introduces the WaterML R package. This tutorial shows an example how to retrieve data from the Hydrologic Information System and do statistical analysis in R.</p>
+<div id="data-access-using-the-waterml-r-package" class="section level2">
+<h2>Data Access Using the WaterML R Package</h2>
+<ol style="list-style-type: decimal">
+<li>Load the required libraries: WaterML for accessing CUAHSI HIS data. The package can be found in the R CRAN package repository</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#import required libraries</span>
+<span class="kw">library</span>(WaterML)</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Find the CUAHSI HIS services from the HIS Central catalogue. The list of available services registered in HIS Central is also published here: <a href="http://hiscentral.cuahsi.org/pub_services.aspx" class="uri">http://hiscentral.cuahsi.org/pub_services.aspx</a>. The GetServices() function returns a table with the URL, description, and citation of each service.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#get the list of supported CUAHSI HIS services</span>
+services &lt;-<span class="st"> </span><span class="kw">GetServices</span>()</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">View</span>(services)</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Define the CUAHSI HIS service that you are connecting to by giving the URL to that service’s WSDL file. This example uses a service from the Ipswich River Watershed Association: <code>http://hydroportal.cuahsi.org/ipswich/cuahsi_1_1.asmx?WSDL</code> that enlists volunteers to collect data on the health of the Ipswich River and its tributaries in Massachusetts, USA. We can use the <code>GetVariables()</code> and <code>GetSites()</code> functions to get the tables of variables and sites on the server.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#point to an CUAHSI HIS service and get a list of the variables and sites</span>
+server &lt;-<span class="st"> &quot;http://hydroportal.cuahsi.org/ipswich/cuahsi_1_1.asmx?WSDL&quot;</span>
+variables &lt;-<span class="st"> </span><span class="kw">GetVariables</span>(server)
+sites &lt;-<span class="st"> </span><span class="kw">GetSites</span>(server)</code></pre>
+<ol start="4" style="list-style-type: decimal">
+<li>Next we will select one site and find which variables are measured at that site. In this example we choose the site “Fish Brook, Brookview Rd, Boxford” with the full site code “IRWA:FB-BV”. Note that you can learn more about the variables at this site viewing the SiteInfo data table in RStudio.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#get full site info for all sites using the GetSiteInfo method</span>
+siteinfo &lt;-<span class="st"> </span><span class="kw">GetSiteInfo</span>(server, <span class="st">&quot;IRWA:FB-BV&quot;</span>)</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">View</span>(siteinfo)</code></pre>
+<ol start="5" style="list-style-type: decimal">
+<li>Now we will get the data values using the GetValues method for two variables at the site: water temperature (full variable code <code>IRWA:Temp</code>) and dissolved oxygen (full variable code <code>IRWA:DO</code>). In this example we get the values for all available days. Note that we can also use the <code>startDate</code> and <code>endDate</code> parameters to restrict the time period of interest. To get help on the GetValues function, you can type <code>?GetValues</code> in the R console. Note that for this particular site there are 21 Temperature and 22 dissolved oxygen observations.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#get full site info for all sites using the GetSiteInfo method</span>
+Temp &lt;-<span class="st"> </span><span class="kw">GetValues</span>(server,<span class="dt">siteCode=</span><span class="st">&quot;IRWA:FB-BV&quot;</span>,<span class="dt">variableCode=</span><span class="st">&quot;IRWA:Temp&quot;</span>)
+DO &lt;-<span class="st"> </span><span class="kw">GetValues</span>(server, <span class="dt">siteCode=</span><span class="st">&quot;IRWA:FB-BV&quot;</span>,<span class="dt">variableCode=</span><span class="st">&quot;IRWA:DO&quot;</span>)</code></pre>
+</div>
+<div id="data-analysis-and-visualization-using-r" class="section level2">
+<h2>Data Analysis and Visualization Using R</h2>
+<ol start="6" style="list-style-type: decimal">
+<li>Plot the time series of temperature and dissolved oxygen. We use the plot function for the new water temperature plot and we use the <code>points()</code> function for adding the dissolved oxygen data points to the existing plot.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(DataValue~time, <span class="dt">data=</span>Temp, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+<span class="kw">points</span>(DataValue~time, <span class="dt">data=</span>DO, <span class="dt">col=</span><span class="st">&quot;blue&quot;</span>)</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAMAAAAjXV6yAAAAVFBMVEUAAAAAADoAAGYAAP8AOpAAZrY6AAA6ADo6AGY6kNtmAABmADpmtrZmtv+QOgCQ2/+2ZgC2/7a2///bkDrb/7bb////AAD/tmb/25D//7b//9v///9uximNAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAJGElEQVR4nO2dDWOqNhSGbWm72a2tqyu29f//z5FAogjJm48TAu59tnq5F3rQx+Tkg4i7M/Gyq/0E1g4FASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgIIC9pthlqCMn63bVux5wEpIujndd89njr9j58C4W5oh59lKCfo+PSltt7yw41prx4XoJigQY3WlBluzL0I+n7Rgk6OSkZBxUrQfeQg1T4+n026zgx3y/ZbsbN29PDRNWQOP9vpd26xH7QoCwuK76DWppCgY6egT9LirdjClBF07PLPz6vK0hQ0x+/7Xj92TTwFzWEGGIenLwqaoy9BHYdnCprFaOl6Q9GCFu0G4lMWa8X6Svb7Hito2YEEPuXaOooLD0XxKVMEdRXn6evgGkREhxsRIUiqLooLOj18dGN05zA0NtyYcEFidVFakGqijp4eTmS4W0Jft2BdFM5BqpOjBLmmwiLDTQisOZLJSrYVMyXo4JgKiwyXylLZPDkHmYa89HmdBOegvGSe2Irt1HRYDgK9hoi6mGHo7ueDcqvi2jqK4iwvqJ+R9101FT1vLtVKUF4rv+BoPjwHzSa19Cp2eA791aBw5QhtxeZNpgsq1VGshaMupgsqNNTQVJgTEhfUz8kn4z1vhTkhQUGmFfOMNDLXB1WYEzInlMxBHjLXB1USJN2Kechc3VFL0CyrXB/kyUHjdzk4madn/UhBthvt7Ulnrw9yvp6xuvABfeiBU7a1Pmhc+YKrYk6d3db6oG0IMtWsQk96G4LUFfdnk4RjT5c5H7SFHKTSykld1agyJ732Vuzc9/2+//zUP+mkCKoxQku8qvHz14dPUEBnIEFQlRFaSg5Sw/jD3lvFnGsW4s9rqdS/TmnmD8+edS09v+9grH/XgkI4gctmZQUJZqvooUbW5cKE81r0i86ZPE0jYSyWNVEWfV5DGze5LGYouor9vmdfVY0670BUBYs4FpJ66Tlv+dSdCzrr6dRlr4v5XvSk6lXMQVcsfNnH/aJn9tRrxQwn76R9aLimaZwHjF9jd6TrRbczkXyBQxli1MxBzfAzx7hYoCOb7vFqv+/wUEyMiq1YY5/IlHHK0ce4SkWr97dXkXyBQ7ExFu4HXc8HxQlq9H/zxzZDMbo6vJ4guZ50lCD7/9zBTTuKVFOQGLE5qPEebff19bBqDpKck45qxfQfrqOv9jcgcCjprVjOnPRMuEBCSoVE3bplO3PSQ+3xlQ23oPQitaU56fNsObqqi05BGUmpyJy05HlHzBgYZXOHiJyqV2ZOWvC8I6avtFW151J/5qvSwoJC5qTDw0VlhxlBugfQ+mMsLUgCEy4yO0wON/0jbGixHKTyj0JguqNtHe+to6Z0/2p++r+qQX4zFCMvi7Zig6D8Va5qgDkeJAzMt+fN+Ef93/TzILAEhTFrMVbQ4TLcdM94hC3iNPMUt5WmmR+bmsI2/GkGZ7pIyfi5fSbmiYYxKUEewhZx9oWnvfXTF4zp2NQhaNyKZeCo7RUXcfa9l9u5wHNfLCIERTwxH3KC8GDVvYhztD5obprZjsmnBX42B8klHzlBeLAauohzZprZlI+5hGAK26gVw88cHnQxLpOD8GA1ZxGn5IzFKKD3AJPNpntLDVbTF3GKmRnCXT2mHLGtwWoCywuqOVhNIGAc5q2E1QerYWRcKg0Yh/lqde3BahhZF9vzktomBNX8+E9KKwY+Tid7XsWmBB2GG0hmXp2/W0Enc11+0cs+dZZIayIFXS3vXfRz81UW2Wuir83bmlXyY+FrYHhP0hcv3NuNBW4wtZqC5rHtwsKCNnM/6VqCbsKtl3RBIZ96Dg63YhJzkBirF5TYiomxfkEDFASgIAAFASgIQEGAYpeey31D3bKUE1TqG+rcFJkTqbh4QZoys2rFBBX7hjoXheZl76cEaTXytayQoKLfUDdPX8Na6TJUqpl3LF4oOR9k7Mgauqd+0FC/tiPIfgeSTDhMiTx9V4JKtPT3JWgrrdhABUHyVBO0GQoKEokn/gRLvWIKkj1cLB4FSZ2XgtYaMO1wsXgUJHVeClprwLTDxeL9bwXdHRQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAiQL2i4E8HR3E34eiP+u9nVXYn7pREnE2e6IRTwsstDtqCfV72W6tCdUi+ushtHvQwk0tDve/dbR7XERn1IVH9QdLohFPCyy0euoOEu+P2CoePTl93oP+UZ+wHPfgHb8fGzvzrZ/fp0Qyqg3eUNkCnotNvr1Xj9O9s92o00QUPUhw/77KcbUgHtLu+v5uega0G7N7uRVsV6Dt3L+OOjjz3dkApod3l/VUjQ8Lbs3uxGYk7VEbvMOS2SdkMqoN3lRUjQkJs7L5eN7t+/XxLuU3AyKVVKkCOg3eVFSpC60eDjP+pOesNGcsro31PBKuYKeA4oP4KCFPbmTN1G6hs+3BxDLkk7A4bdiENUkF093W30zyP6DT8OaV2qmfcEtLu8CAnSX1OviovdSMtBl18Q6ih6AoY9OakSpBaZ6ydvN/TtT2Nz9LFf/qUCzI5dEmqsM+DVLg8crAIoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBgHUKOr2572W5MKsUtBY5CgoCrFHQ98tu9/Sv+s7Fl79fd7u9+nu/NDR+PU02axSkS5D+UsoXvRb+8VOvmDsGL3qSZOWC9mfz8DbcrDnvKwbjWbmgt7N96FffZX69VzwbEjTcnY2CvCVocbYjqFLbv1JB+6kg3YrpTzosyioFnQ+mH3QtSPeDlm7EVipoRVAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQYD/ALvqW+aes2dWAAAAAElFTkSuQmCC" /></p>
+<ol start="7" style="list-style-type: decimal">
+<li>Create a merged table with columns: Time, DO (Dissolved Oxygen) and Temp (Temperature). We can create this table using the merge function based on the time column. Note that we renamed the automatically assigned column names in the merged table from DataValue.x to “DO” and from DataValue.y to “Temp”.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#merge our two tables based on the time column</span>
+data &lt;-<span class="st"> </span><span class="kw">merge</span>(DO, Temp, <span class="dt">by=</span><span class="st">&quot;time&quot;</span>)
+<span class="co">#rename the column DataValue.x in the merged table to &quot;DO&quot;</span>
+<span class="kw">names</span>(data)[<span class="kw">names</span>(data)==<span class="st">&quot;DataValue.x&quot;</span>] &lt;-<span class="st"> &quot;DO&quot;</span>
+<span class="co">#rename the column DataValue.y in the merged table to &quot;Temp&quot;</span>
+<span class="kw">names</span>(data)[<span class="kw">names</span>(data)==<span class="st">&quot;DataValue.y&quot;</span>] &lt;-<span class="st"> &quot;Temp&quot;</span></code></pre>
+<ol start="8" style="list-style-type: decimal">
+<li>Now you can plot the data as scatter plot of dissolved oxygen concentration versus temperature.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(DO~Temp, <span class="dt">data=</span>data)</code></pre>
+<ol start="9" style="list-style-type: decimal">
+<li>Finally, we can fit a linear regression model to see is there is a relationship between water temperature and dissolved oxygen concentration at this site.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Perform a linear regression on the dissolved oxygen vs. temperature values</span>
+model &lt;-<span class="st"> </span><span class="kw">lm</span>(DO~Temp, <span class="dt">data=</span>data)</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(model)
+<span class="kw">abline</span>(model)</code></pre>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<p>The code creates two outputs when run in RStudio. First, it creates a scatter plot of dissolved oxygen concentration versus water temperature with the linear regression line.</p>
+<p><img src="data:image/png;base64,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" /></p>
+<p>Second, it outputs the results from the regression analysis. From these results, there appears to be a significant negative linear relationship between water temperature and dissolved oxygen at this site.</p>
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; lm(formula = DO ~ Temp, data = data)
+#&gt; 
+#&gt; Residuals:
+#&gt;     Min      1Q  Median      3Q     Max 
+#&gt; -2.1075 -1.2097 -0.5861  1.1340  3.1318 
+#&gt; 
+#&gt; Coefficients:
+#&gt;             Estimate Std. Error t value Pr(&gt;|t|)    
+#&gt; (Intercept)  8.90404    0.75302  11.824 1.26e-09 ***
+#&gt; Temp        -0.16965    0.04813  -3.525   0.0026 ** 
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; Residual standard error: 1.584 on 17 degrees of freedom
+#&gt; Multiple R-squared:  0.4223, Adjusted R-squared:  0.3883 
+#&gt; F-statistic: 12.43 on 1 and 17 DF,  p-value: 0.002599</code></pre>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>This tutorial shows how you can use the WaterML library in R to access data from a CUAHSI HIS web service directly within R without the need to first download data to your local computer. While this was demonstrated for a data service hosted by Ipswich River Watershed Association, the WaterML R package can be used to access data from any compliant CUAHSI HIS web service including the 100+ data services listed on the HIS Central website.</p>
+</div>
+<div id="additional-notes" class="section level2">
+<h2>Additional Notes</h2>
+<p>For additional information on the tutorial and the WaterML R Package, please refer to:</p>
+<p>Jiri Kadlec, Bryn StClair, Daniel P.Ames, Richard A. Gill (2015). WaterML R package for managing ecological experiment data on a CUAHSI HydroServer. Ecological Informatics, 28, 19-28. <a href="http://www.sciencedirect.com/science/article/pii/S1574954115000801" class="uri">http://www.sciencedirect.com/science/article/pii/S1574954115000801</a></p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

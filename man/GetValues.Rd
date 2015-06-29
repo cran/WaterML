@@ -4,7 +4,8 @@
 \alias{GetValues}
 \title{GetValues}
 \usage{
-GetValues(server, siteCode, variableCode, startDate = NULL, endDate = NULL,
+GetValues(server, siteCode = NULL, variableCode = NULL, startDate = NULL,
+  endDate = NULL, methodID = NULL, sourceID = NULL, qcID = NULL,
   daily = NULL)
 }
 \arguments{
@@ -21,17 +22,55 @@ function and use the FullVariableCode field}
 
 \item{endDate}{(optional) The end date in "yyyy-mm-dd" format}
 
+\item{methodID}{(optional) The ID of the observation method. To get a list of possible method IDs, see
+methodID column in the output of GetSiteInfo(). If methodID is not specified, then the observations
+in the output data.frame won't be filtered by method.}
+
+\item{sourceID}{(optional) The ID of the source. To get a list of possible source IDs, see
+sourceID column in the output of GetSiteInfo(). If sourceID is not specified, then the observations
+in the output data.frame won't be filtered by source.}
+
+\item{qcID}{(optional) The ID of the quality control level. Typically 0 is used for raw data and 1 is
+used for quality controlled data. To get a list of possible quality control level IDs, see
+QualityControlLevelID column in the output of GetSiteInfo(). If qcID is not specified, then the
+observations in the output data.frame won't be filtered by quality control level.}
+
 \item{daily}{(optional) If you set daily="max", daily="min" or daily="mean", then the
 data values are aggreagted to daily time step.}
+}
+\value{
+a data.frame of data values with the following columns:
+\itemize{
+\item time: The local date/time of the observation. The data type is POSIXct.
+\item DataValue: The observed data value
+\item UTCOffset: The difference between local time and UTC time in hours
+\item CensorCode: The code for censored observations. Possible values are nc (not censored),
+            gt (greater than), lt (less than),
+            nd (non-detect), pnq (present but not quantified)
+\item DateTimeUTC: The UTC time of the observation. The data type is POSIXct.
+\item MethodCode: The code of the method or instrument used for the observation
+\item SourceCode: The code of the data source
+\item QualityControlLevelCode: The code of the quality control level. Possible values are
+            -9999 (Unknown), 0 (Raw data), 1 (Quality controlled data),
+            2 (Derived products), 3 (Interpreted products), 4 (Knowledge products)
+}
+The output data.frame also has attributes with information about the status:
+download.time, parse.time, download.status, parse.status
+These attributes can be used for troubleshooting WaterOneFlow/WaterML server errors.
+If parse status is "NO_VALUES_FOUND",
+then this time series doesn't have any available data for the selected time period.
 }
 \description{
 This function gets the time series data values from the WaterML web service
 }
 \examples{
 #example 1: Get Values from a known site and variable from RushValley server
-GetValues("http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL",
+v1 <- GetValues("http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL",
            site="Ru5BMMA", variable="SRS_Nr_NDVI", startDate="2014-11-01", endDate="2014-11-02",
            daily="max")
+#example 2: Get values from an external REST URL (in this case the Provo USGS NWIS site id 10163000)
+url <- "http://waterservices.usgs.gov/nwis/dv/?format=waterml,1.1&sites=10163000&parameterCd=00060"
+v2 <- GetValues(url)
 }
 \keyword{waterml}
 
