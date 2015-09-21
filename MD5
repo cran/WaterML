@@ -1,4 +1,4 @@
-ea026682be3cc790a36a2e794eac1cdf *DESCRIPTION
+ca3a64be1fc55ba6684c40db28eea239 *DESCRIPTION
 0de87b358016b660fb6aa26ebe8d13bf *LICENSE
 e8945c66ae6ce9cb1b564517a5f36f8b *NAMESPACE
 ff04136fb502eddc575448618649b94e *R/AddMethods.R
@@ -6,10 +6,10 @@ ff04136fb502eddc575448618649b94e *R/AddMethods.R
 9763a032c91042099de70b18313e9441 *R/AddSources.R
 cc2412d89121f6c32ef85a82acde9147 *R/AddValues.R
 bf457b3efcec8a98ceefd3eff22dc6a1 *R/AddVariables.R
-f891e780848e331fd3ad9f4193769cd1 *R/GetServices.R
+2daf7ee45ab2c7dc63b7bb21876bfa85 *R/GetServices.R
 66c62cc88064bab62c8d89111348db24 *R/GetSiteInfo.R
 4bb87ba3e14654aef1b2c1afe5cfae0d *R/GetSites.R
-fca0397f07128c0eeebf44a22e21cbcc *R/GetValues.R
+cd3de5d320210a885700318401ed088e *R/GetValues.R
 bb300aa6e0f8396e97299c82df3ddd68 *R/GetVariables.R
 7aa09419f070a94c4576dd86faa0ac56 *R/HISCentral_GetSeriesCatalog.R
 bdf23b742ffe12ca14ebe6071c518ede *R/HISCentral_GetSites.R
