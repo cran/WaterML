@@ -28,13 +28,15 @@
 #' data values are aggreagted to daily time step.
 #' @return a data.frame of data values with the following columns:
 #' \itemize{
-#' \item time: The local date/time of the observation. The data type is POSIXct.
+#' \item time: The local date/time of the observation. The data type is POSIXct. POSIXct is
+#'             a data type in R for storing time.
 #' \item DataValue: The observed data value
 #' \item UTCOffset: The difference between local time and UTC time in hours
 #' \item CensorCode: The code for censored observations. Possible values are nc (not censored),
 #'             gt (greater than), lt (less than),
 #'             nd (non-detect), pnq (present but not quantified)
 #' \item DateTimeUTC: The UTC time of the observation. The data type is POSIXct.
+#'             POSIXct is a special data type in R for storing time.
 #' \item MethodCode: The code of the method or instrument used for the observation
 #' \item SourceCode: The code of the data source
 #' \item QualityControlLevelCode: The code of the quality control level. Possible values are
@@ -56,9 +58,12 @@
 #' #example 2: Get values from an external REST URL (in this case the Provo USGS NWIS site id 10163000)
 #' url <- "http://waterservices.usgs.gov/nwis/dv/?format=waterml,1.1&sites=10163000&parameterCd=00060"
 #' v2 <- GetValues(url)
-#' #example 3: Get values from WaterML 2.0 file
+#' #example 3: Get values from WaterML 2.0 file and show year, month, day
 #' url2 <- "http://www.waterml2.org/KiWIS-WML2-Example.wml"
 #' waterml2_data <- GetValues(url2)
+#' waterml2_data$year <- strftime(waterml2_data$time, "%Y")
+#' waterml2_data$month <- strftime(waterml2_data$time, "%M")
+#' waterml2_data$day <- strftime(waterml2_data$time, "%d")
 
 GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, endDate=NULL,
                       methodID=NULL, sourceID=NULL, qcID=NULL, daily=NULL) {
@@ -157,7 +162,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     status.code <- http_status(response)$category
     print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
     # check for bad status code
-    if (status.code != "success") {
+    if (tolower(status.code) != "success") {
       status.message <- http_status(response)$message
       attr(df, "download.time") <- as.numeric(download.time["elapsed"])
       attr(df, "download.status") <- status.message
@@ -195,7 +200,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
       status.code <- http_status(response)$category
       print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
       # check for bad status code
-      if (status.code != "success") {
+      if (tolower(status.code) != "success") {
         status.message <- http_status(response)$message
         attr(df, "download.time") <- as.numeric(download.time["elapsed"])
         attr(df, "download.status") <- status.message
@@ -227,7 +232,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     if (isFile) {
       doc <- xmlParseDoc(server)
     } else {
-      doc <- content(response, type = "application/xml")
+      doc <- xmlParse(response)
     }
   }, warning = function(w) {
     print("Error reading WaterML: Bad XML format.")

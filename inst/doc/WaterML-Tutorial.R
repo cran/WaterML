@@ -36,6 +36,14 @@ plot(DataValue~time, data=Temp, col="red")
 points(DataValue~time, data=DO, col="blue")
 
 ## ------------------------------------------------------------------------
+years <- strftime(DO$time, "%Y")
+months <- strftime(DO$time, "%m")
+days <- strftime(DO$time, "%d")
+hours <- strftime(DO$time, "%h")
+minutes <- strftime(DO$time, "%M")
+seconds <- strftime(DO$time, "%s")
+
+## ------------------------------------------------------------------------
 #merge our two tables based on the time column
 data <- merge(DO, Temp, by="time")
 #rename the column DataValue.x in the merged table to "DO"

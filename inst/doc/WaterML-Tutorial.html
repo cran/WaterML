@@ -10,7 +10,7 @@
 
 <meta name="author" content="Jiri Kadlec" />
 
-<meta name="date" content="2015-06-27" />
+<meta name="date" content="2016-01-26" />
 
 <title>WaterML R Package Tutorial</title>
 
@@ -54,7 +54,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <div id="header">
 <h1 class="title">WaterML R Package Tutorial</h1>
 <h4 class="author"><em>Jiri Kadlec</em></h4>
-<h4 class="date"><em>2015-06-27</em></h4>
+<h4 class="date"><em>2016-01-26</em></h4>
 </div>
 
 
@@ -100,6 +100,13 @@ DO &lt;-<span class="st"> </span><span class="kw">GetValues</span>(server, <span
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(DataValue~time, <span class="dt">data=</span>Temp, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
 <span class="kw">points</span>(DataValue~time, <span class="dt">data=</span>DO, <span class="dt">col=</span><span class="st">&quot;blue&quot;</span>)</code></pre>
 <p><img src="data:image/png;base64,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" /></p>
+<p>Note that the “time” represents the local time, and “DateTimeUTC” represents the UTC time. The “DateTimeUTC” columns are in POSIXct format. POSIXct is a special format in R for storing date and time. POSIXct represents the number of seconds since the beginning of 1970. You can use the strftime function to get the year, month, day, hour, minute and second corresponding to each time as shown below:</p>
+<pre class="sourceCode r"><code class="sourceCode r">years &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%Y&quot;</span>)
+months &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%m&quot;</span>)
+days &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%d&quot;</span>)
+hours &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%h&quot;</span>)
+minutes &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%M&quot;</span>)
+seconds &lt;-<span class="st"> </span><span class="kw">strftime</span>(DO$time, <span class="st">&quot;%s&quot;</span>)</code></pre>
 <ol start="7" style="list-style-type: decimal">
 <li>Create a merged table with columns: Time, DO (Dissolved Oxygen) and Temp (Temperature). We can create this table using the merge function based on the time column. Note that we renamed the automatically assigned column names in the merged table from DataValue.x to “DO” and from DataValue.y to “Temp”.</li>
 </ol>
