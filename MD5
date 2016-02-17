@@ -1,4 +1,4 @@
-469e42e5690527f0b03586069a16c6e9 *DESCRIPTION
+07be26021930c04ca14795d46fd31880 *DESCRIPTION
 0de87b358016b660fb6aa26ebe8d13bf *LICENSE
 c2f60a8fe823d897c28e2f2457debee3 *NAMESPACE
 b5c49a7692d9a15c8d91582ac480932b *R/AddMethods.R
@@ -8,8 +8,8 @@ b3244010798ed638ec248f81cb75f4a8 *R/AddValues.R
 9d6d5fbaef339c3547aeccff5511e5aa *R/AddVariables.R
 c39ca13b7a0a0a94dc60f7f6de843898 *R/GetServices.R
 6bbd4e68ec7ea8a0d851fe69bb153e9f *R/GetSiteInfo.R
-dac0f17d5b2c8d7957eeab7289cd8e61 *R/GetSites.R
-4032fb9b508aa48e5154ec1aee6d53f9 *R/GetValues.R
+425df3e957a767cc804f5fc636ecbcfc *R/GetSites.R
+7edb28576d8888fb5aad6d694e85e5fb *R/GetValues.R
 62b4c0033531abd5b707312ae03b598f *R/GetVariables.R
 3bd645363f46fd8fac1c973fd77822a7 *R/HISCentral_GetSeriesCatalog.R
 a4b6d09a8d3f19577bc92ac308c6bc12 *R/HISCentral_GetSites.R
@@ -23,7 +23,7 @@ c90901e8c36e7b5ddbf926b6a00e8d5a *build/vignette.rds
 1024e4f3f5cf005b8174e78d3991ee66 *inst/CITATION
 7d3627884a26de9501f1c1e60e67f064 *inst/doc/WaterML-Tutorial.R
 33b7f4de1f4c735a78c1be9abce0873e *inst/doc/WaterML-Tutorial.Rmd
-fe0ff9b766bc493173d4b0a3a66ea48c *inst/doc/WaterML-Tutorial.html
+7ccaa8eff569f2acf73f6c532e3a692f *inst/doc/WaterML-Tutorial.html
 8c5d7e6bf5f21b9cc3a4abdb41ec3445 *man/AddMethods.Rd
 76d89afb25ecabd6e7aa69a74fe018e2 *man/AddSites.Rd
 661ee355d5dba1eb6fc4d79989e1b4ab *man/AddSources.Rd

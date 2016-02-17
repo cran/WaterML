@@ -232,7 +232,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     if (isFile) {
       doc <- xmlParseDoc(server)
     } else {
-      doc <- xmlParse(response)
+      doc <- xmlParse(content(response, type="text", encoding="utf-8"))
     }
   }, warning = function(w) {
     print("Error reading WaterML: Bad XML format.")
@@ -244,8 +244,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     attr(df, "parse.status") <- "Bad XML format"
     attr(df, "parse.time") <- 0
     return(df)
-  }
-  )
+  })
   if (is.null(doc)) {
     print("Error reading WaterML: Bad XML format.")
     attr(df, "parse.status") <- "Bad XML format"
@@ -356,7 +355,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
   }
 
   #again check for the status code
-  if (status.code == "server error") {
+  if (tolower(status.code) == "server error") {
     print(paste("SERVER ERROR in GetValues ", http_status(response)$message))
     end.parse.time <- Sys.time()
     parse.time <- as.numeric(difftime(end.parse.time, begin.parse.time, units="sec"))
@@ -405,19 +404,22 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
   time_diff <- NULL
   zoneOffset <- xpathSApply(doc, "//sr:defaultTimeZone", xmlGetAttr, name="zoneOffset", namespaces=ns)
   zoneOffset <- unlist(zoneOffset)
+  zoneName <- "GMT"
   if (length(zoneOffset) > 0) {
     offset_split <- strsplit(zoneOffset, ":")
     diff_text <- offset_split[[1]][1]
     time_diff <- as.difftime(as.numeric(diff_text), units="hours")
+    if (as.numeric(diff_text) > 0) {
+      zoneName <- paste("Etc/GMT+", as.numeric(diff_text), sep="")
+    } else {
+      zoneName <- paste("Etc/GMT", as.numeric(diff_text), sep="")
+    }
   }
 
   bigData <- 10000
   if (N > bigData) {
     print(paste("found", N,"data values"))
-    print("processing dateTime...")
   }
-  dateTimeRaw <- xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTime", namespaces=ns)
-  DateTime <- as.POSIXct(strptime(dateTimeRaw, "%Y-%m-%dT%H:%M:%S"))
 
   if (N > bigData) { print("processing censorCode...") }
   censorCode = xpathSApply(doc, "//sr:value", xmlGetAttr, name="censorCode", namespaces=ns)
@@ -440,13 +442,36 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
   if (version == "1.1") {
 
     #if defaultTimeZone is not specified, then read it for each value
-    if (is.null(time_diff)) {
-      if (N > bigData) { print("processing dateTimeUTC...") }
-      dateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTimeUTC", namespaces=ns)
+    if (N > bigData) { print("processing dateTimeUTC...") }
 
-      if (N > bigData) { print("converting date and time...") }
-      DateTimeUTC <- as.POSIXct(strptime(dateTimeUTC, "%Y-%m-%dT%H:%M:%S"))
-      UTCOffset = DateTime - DateTimeUTC
+    if (is.null(time_diff)) {
+      DateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTimeUTC", namespaces=ns)
+      DateTimeUTC <- as.POSIXct(DateTimeUTC, format="%Y-%m-%dT%H:%M:%S", tz="GMT")
+      UTCOffset = xpathSApply(doc, "//sr:value", xmlGetAttr, name="timeOffset", namespaces=ns)
+      UTCOffset <- ifelse(grepl(":", UTCOffset),
+                          as.numeric(substr(UTCOffset, nchar(UTCOffset)-4, nchar(UTCOffset)-3)),
+                          as.numeric(UTCOffset))
+      utcDiff = as.difftime(UTCOffset, units="hours")
+      DateTime = as.POSIXct(DateTimeUTC + utcDiff)
+      if (UTCOffset > 0) {
+        attr(DateTime, "tzone") <- paste("Etc/GMT+", UTCOffset[1], sep="")
+      }
+      if (UTCOffset < 0) {
+        attr(DateTime, "tzone") <- paste("Etc/GMT", UTCOffset[1], sep="")
+      }
+    } else {
+      DateTime <- xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTime", namespaces=ns)
+      zone="GMT"
+      if (as.numeric(diff_text) > 0) {
+        zone <- paste("Etc/GMT+", as.numeric(diff_text), sep="")
+      }
+      if (as.numeric(diff_text) < 0) {
+        zone <- paste("Etc/GMT", as.numeric(diff_text), sep="")
+      }
+      DateTime <- as.POSIXct(DateTime, format="%Y-%m-%dT%H:%M:%S", tz=zone)
+      UTCOffset = rep(as.numeric(diff_text), N)
+      DateTimeUTC = DateTime - time_diff
+      attr(DateTimeUTC, "tzone") <- "GMT"
     }
 
     if (N > bigData) { print("processing methodCode...") }
@@ -469,7 +494,9 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
   } else {
 
     #WaterML 1.0 usually doesn't provide information on UTC offset
-    DateTimeUTC <- DateTime
+    if (N > bigData) { print("processing dateTime...") }
+    DateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTime", namespaces=ns)
+    DateTime <- DateTimeUTC
     UTCOffset <- rep(0, N)
 
     if (N > bigData) { print ("processing methodID...")}
@@ -490,13 +517,6 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
 
     nodata = as.numeric(xpathSApply(doc, "//sr:NoDataValue", xmlValue, namespaces=ns))
   }
-
-  #process the time zone
-  if (!is.null(time_diff)) {
-    UTCOffset <- rep(as.numeric(time_diff), N)
-    DateTimeUTC <- DateTime - time_diff
-  }
-
 
   #make the data frame
   df <- data.frame(
