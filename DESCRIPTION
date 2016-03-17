@@ -2,7 +2,7 @@ Package: WaterML
 Type: Package
 Title: Fetch and Analyze Data from 'WaterML' and 'WaterOneFlow' Web
         Services
-Version: 1.7.0
+Version: 1.7.1
 Authors@R: person("Jiri","Kadlec", email="jirikadlec2@gmail.com", role=c("aut", "cre"))
 Description: Lets you connect to any of the Consortium of Universities for the Advancement
     of Hydrologic Sciences, Inc. ('CUAHSI') Water Data Center 'WaterOneFlow' web services
@@ -30,8 +30,8 @@ Suggests: knitr
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
 NeedsCompilation: no
-Packaged: 2016-02-17 16:27:59 UTC; Jiri
+Packaged: 2016-03-17 21:28:15 UTC; Jiri
 Author: Jiri Kadlec [aut, cre]
 Maintainer: Jiri Kadlec <jirikadlec2@gmail.com>
 Repository: CRAN
-Date/Publication: 2016-02-17 17:42:17
+Date/Publication: 2016-03-17 23:19:55
