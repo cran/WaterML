@@ -4,8 +4,16 @@
 \alias{HISCentral_GetSeriesCatalog}
 \title{HISCentral_GetSeriesCatalog}
 \usage{
-HISCentral_GetSeriesCatalog(west, south, east, north, serviceID = NULL,
-  keyword = NULL, beginDate = NULL, endDate = NULL)
+HISCentral_GetSeriesCatalog(
+  west,
+  south,
+  east,
+  north,
+  serviceID = NULL,
+  keyword = NULL,
+  beginDate = NULL,
+  endDate = NULL
+)
 }
 \arguments{
 \item{west}{The west longitude of the geographic
@@ -61,4 +69,3 @@ This function searches the table of time series from the HIS Central catalog
 series_catalog <- HISCentral_GetSeriesCatalog(west=14.1, south=49.9, east=14.3, north=50.1)
 }
 \keyword{waterml}
-

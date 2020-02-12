@@ -51,10 +51,10 @@
 #' @keywords waterml
 #' @export
 #' @examples
-#' #example 1: Get Values from a known site and variable from RushValley server
-#' v1 <- GetValues("http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL",
-#'            site="Ru5BMMA", variable="SRS_Nr_NDVI", startDate="2014-11-01", endDate="2014-11-02",
-#'            daily="max")
+#' #example 1: Get Values from a known site and variable from Ipswich River server.
+#' server <- "http://hydroportal.cuahsi.org/ipswich/cuahsi_1_1.asmx?WSDL"
+#' v1 <- GetValues(server, site="IRWA:FB-BV", variable="IRWA:DO",
+#'                 startDate="1999-01-01", endDate="1999-12-31")
 #' #example 2: Get values from an external REST URL (in this case the Provo USGS NWIS site id 10163000)
 #' url <- "http://waterservices.usgs.gov/nwis/dv/?format=waterml,1.1&sites=10163000&parameterCd=00060"
 #' v2 <- GetValues(url)
@@ -147,7 +147,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
         status <- http_status(response)$message
         downloaded <- TRUE
       },error = function(e) {
-        print(conditionMessage(e))
+        warning(conditionMessage(e))
       }
       )
     )
@@ -160,7 +160,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     }
 
     status.code <- http_status(response)$category
-    print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
+    print(paste("download time:", round(download.time["elapsed"], 1), "seconds, status:", status.code))
     # check for bad status code
     if (tolower(status.code) != "success") {
       status.message <- http_status(response)$message
@@ -185,7 +185,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
           status <- http_status(response)$message
           downloaded <- TRUE
         },error = function(e) {
-          print(conditionMessage(e))
+          warning(conditionMessage(e))
         }
         )
       )
@@ -231,28 +231,28 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
 
   print("reading data values WaterML ...")
   doc <- NULL
-  status.code <- "xml error"
+  status.code <- "xml parse error"
   err <- tryCatch({
     if (isFile) {
       doc <- xmlParseDoc(server)
       status.code <- "success"
     } else {
-      doc <- xmlParse(content(response, type="text", encoding="utf-8"))
+      doc <- xmlParse(response)
     }
   }, warning = function(w) {
-    print("Error reading WaterML: Bad XML format.")
-    attr(df, "parse.status") <- "Bad XML format"
+    warning(paste("Error reading WaterML:", conditionMessage(w)))
+    attr(df, "parse.status") <- conditionMessage(w)
     attr(df, "parse.time") <- 0
     return(df)
   }, error = function(e) {
-    print("Error reading WaterML: Bad XML format.")
-    attr(df, "parse.status") <- "Bad XML format"
+    warning(paste("Error reading WaterML:", conditionMessage(e)))
+    attr(df, "parse.status") <- conditionMessage(e)
     attr(df, "parse.time") <- 0
     return(df)
   })
   if (is.null(doc)) {
-    print("Error reading WaterML: Bad XML format.")
-    attr(df, "parse.status") <- "Bad XML format"
+    warning("WaterML data from the GetValues response could not be parsed.")
+    attr(df, "parse.status") <- "XML parse error"
     attr(df, "parse.time") <- 0
     return(df)
   }
@@ -449,14 +449,24 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     #if defaultTimeZone is not specified, then read it for each value
     if (N > bigData) { print("processing dateTimeUTC...") }
 
+    DateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTimeUTC", namespaces=ns)
+    if (is.null(unlist(DateTimeUTC))) {
+      time_diff <- 0
+      diff_text <- "0"
+    }
+
     if (is.null(time_diff)) {
-      DateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTimeUTC", namespaces=ns)
       DateTimeUTC <- as.POSIXct(DateTimeUTC, format="%Y-%m-%dT%H:%M:%S", tz="GMT")
+
       UTCOffset = xpathSApply(doc, "//sr:value", xmlGetAttr, name="timeOffset", namespaces=ns)
-      UTCOffset <- ifelse(grepl(":", UTCOffset),
-                          as.numeric(substr(UTCOffset, nchar(UTCOffset)-4, nchar(UTCOffset)-3)),
-                          as.numeric(UTCOffset))
-      utcDiff = as.difftime(UTCOffset, units="hours")
+      if (is.null(unlist(UTCOffset))) {
+        utcDiff = as.difftime(0, units="hours")
+      } else {
+        UTCOffset <- ifelse(grepl(":", UTCOffset),
+                            as.numeric(substr(UTCOffset, nchar(UTCOffset)-4, nchar(UTCOffset)-3)),
+                            as.numeric(UTCOffset))
+        utcDiff = as.difftime(UTCOffset, units="hours")
+      }
       DateTime = as.POSIXct(DateTimeUTC + utcDiff)
       if (UTCOffset[1] > 0) {
         attr(DateTime, "tzone") <- paste("Etc/GMT+", UTCOffset[1], sep="")

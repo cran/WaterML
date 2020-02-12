@@ -35,11 +35,11 @@
 #' @export
 #' @examples
 #' #Getting all sites from a service
-#' sites <- GetSites("http://icewater.usu.edu/MudLake/cuahsi_1_0.asmx?WSDL")
+#' sites <- GetSites("http://hydroportal.cuahsi.org/ipswich/cuahsi_1_1.asmx?WSDL")
 #'
 #' #Getting a subset of sites restricted by geographical area
-#' server <- "http://drought.usu.edu/usbrreservoirs/cuahsi_1_1.asmx?WSDL"
-#' sites_subset <- GetSites(server, west=-113.0, south=35.0, east=110.0, north=40.0)
+#' server <- "http://hydroportal.cuahsi.org/NEON/cuahsi_1_1.asmx?WSDL"
+#' sites_subset <- GetSites(server, west=-115.0, south=40.0, east=-110.0, north=42.0)
 
 GetSites <- function(server, west=NULL, south=NULL, east=NULL, north=NULL) {
 
@@ -134,6 +134,7 @@ GetSites <- function(server, west=NULL, south=NULL, east=NULL, north=NULL) {
         downloaded <- TRUE
       },error = function(e) {
         print(conditionMessage(e))
+        stop(e)
       }
       )
     )
@@ -147,7 +148,7 @@ GetSites <- function(server, west=NULL, south=NULL, east=NULL, north=NULL) {
 
     status.code <- http_status(response)$category
 
-    print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
+    print(paste("download time:", round(download.time["elapsed"], 0), "seconds, status:", status.code))
 
     #in case of server error, print the error and exit
     if (tolower(status.code) == "server error") {
@@ -171,6 +172,7 @@ GetSites <- function(server, west=NULL, south=NULL, east=NULL, north=NULL) {
         downloaded <- TRUE
       },error=function(e){
         print(conditionMessage(e))
+        stop(e)
       })
     )
 

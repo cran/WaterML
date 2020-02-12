@@ -4,8 +4,8 @@
 #'
 #' @import XML
 #' @param server The URL of the web service ending with .asmx or .wsdl,
-#'  for example: http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx?WSDL
-#' @param siteCode The full site code, for example: default:Ru5BMMA. To get a list of
+#'  for example: http://hydroportal.cuahsi.org/ipswich/cuahsi_1_1.asmx?WSDL
+#' @param siteCode The full site code, for example: IRWA:FB-BV. To get a list of
 #' available site codes, see GetSites() function and use the FullSiteCode field.
 #' @return a data.frame of data values with the following columns:
 #' \tabular{lll}{
@@ -98,8 +98,8 @@
 #' @keywords waterml
 #' @export
 #' @examples
-#' server <- "http://worldwater.byu.edu/app/index.php/rushvalley/services/cuahsi_1_1.asmx"
-#' siteInfo <- GetSiteInfo(server, siteCode="default:Ru5BMMA")
+#' server <- "http://hydroportal.cuahsi.org/SNOTEL/cuahsi_1_1.asmx"
+#' siteInfo <- GetSiteInfo(server, siteCode="SNOTEL:879")
 
 GetSiteInfo <- function(server, siteCode) {
 
@@ -154,7 +154,7 @@ GetSiteInfo <- function(server, siteCode) {
         status <- http_status(response)$message
         downloaded <- TRUE
         },error = function(e) {
-          print(conditionMessage(e))
+          warning(conditionMessage(e))
         }
       )
     )
@@ -168,7 +168,7 @@ GetSiteInfo <- function(server, siteCode) {
 
     status.code <- http_status(response)$category
 
-    print(paste("download time:", download.time["elapsed"], "seconds, status:", status.code))
+    print(paste("download time:", round(download.time["elapsed"], 1), "seconds, status:", status.code))
 
   } else {
     #if the service is REST
@@ -180,7 +180,7 @@ GetSiteInfo <- function(server, siteCode) {
         status <- http_status(response)$message
         downloaded <- TRUE
         },error = function(e) {
-          print(conditionMessage(e))
+          warning(conditionMessage(e))
         }
       )
     )
@@ -213,7 +213,7 @@ GetSiteInfo <- function(server, siteCode) {
   #try to find faultstring to look for an error
   fault <- xpathSApply(doc, "//soap:Fault", xmlValue, namespaces=ns)
   if (length(fault) > 0) {
-    print(paste("SERVER ERROR in GetSiteInfo ", as.character(fault), sep=":"))
+    warning(paste("SERVER ERROR in GetSiteInfo ", as.character(fault), sep=":"))
     attr(df, "download.time") <- download.time["elapsed"]
     attr(df, "download.status") <- as.character(fault)
     attr(df, "parse.time") <- NA
