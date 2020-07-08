@@ -450,6 +450,7 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
     if (N > bigData) { print("processing dateTimeUTC...") }
 
     DateTimeUTC = xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTimeUTC", namespaces=ns)
+
     if (is.null(unlist(DateTimeUTC))) {
       time_diff <- 0
       diff_text <- "0"
@@ -459,8 +460,9 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
       DateTimeUTC <- as.POSIXct(DateTimeUTC, format="%Y-%m-%dT%H:%M:%S", tz="GMT")
 
       UTCOffset = xpathSApply(doc, "//sr:value", xmlGetAttr, name="timeOffset", namespaces=ns)
+
       if (is.null(unlist(UTCOffset))) {
-        utcDiff = as.difftime(0, units="hours")
+        utcDiff = rep(as.difftime(0, units="hours"), N)
       } else {
         UTCOffset <- ifelse(grepl(":", UTCOffset),
                             as.numeric(substr(UTCOffset, nchar(UTCOffset)-4, nchar(UTCOffset)-3)),
@@ -468,11 +470,16 @@ GetValues <- function(server, siteCode=NULL, variableCode=NULL, startDate=NULL, 
         utcDiff = as.difftime(UTCOffset, units="hours")
       }
       DateTime = as.POSIXct(DateTimeUTC + utcDiff)
-      if (UTCOffset[1] > 0) {
-        attr(DateTime, "tzone") <- paste("Etc/GMT+", UTCOffset[1], sep="")
-      }
-      if (UTCOffset[1] < 0) {
-        attr(DateTime, "tzone") <- paste("Etc/GMT", UTCOffset[1], sep="")
+      if (utcDiff[1] == 0) {
+        attr(DateTime, "tzone") <- "Etc/GMT"
+        UTCOffset = rep(0, N)
+      } else {
+        if (UTCOffset[1] > 0) {
+          attr(DateTime, "tzone") <- paste("Etc/GMT+", UTCOffset[1], sep="")
+        }
+        if (UTCOffset[1] < 0) {
+          attr(DateTime, "tzone") <- paste("Etc/GMT", UTCOffset[1], sep="")
+        }
       }
     } else {
       DateTime <- xpathSApply(doc, "//sr:value", xmlGetAttr, name="dateTime", namespaces=ns)
